@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // Use the SonarScanner tool configured in Jenkins Global Tool Configuration
         SONAR_SCANNER_HOME = tool 'SonarScanner'
     }
 
@@ -12,17 +13,41 @@ pipeline {
             }
         }
 
+        stage('Build & Test') {
+            steps {
+                sh '''
+                    echo "Running Python build/tests..."
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    pip install -r requirements.txt || true
+                    pytest || true
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
+                // Use the SonarQube server configured in Jenkins (Manage Jenkins → Configure System)
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        python-project || true
-                        sonar-scanner
+                        echo "Running SonarQube analysis..."
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                          -Dsonar.projectKey=python-project \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=$SONAR_HOST_URL \
+                          -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
     }
 }
-
 
