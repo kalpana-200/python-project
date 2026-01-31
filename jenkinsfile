@@ -3,35 +3,34 @@ pipeline {
 
     environment {
         SONAR_SCANNER_HOME = '/opt/sonar-scanner-5.0.1.3006-linux'
-        PATH = "${env.HOME}/.local/bin:${env.PATH}" // Ensure pip --user binaries are on PATH
+        PATH = "${env.HOME}/.local/bin:${env.PATH}"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-       stage('Build & Test') {
-    steps {
-        sh '''
-            echo "Installing Python dependencies if needed..."
-            python3 -m pip install --upgrade pip --user
-            python3 -m pip install pytest --user
+        stage('Build & Test') {
+            steps {
+                sh '''
+                    echo "Installing Python dependencies if needed..."
+                    python3 -m pip install --upgrade pip --user
+                    python3 -m pip install pytest --user
 
-            if [ -f requirements.txt ]; then
-                echo "Installing additional dependencies from requirements.txt..."
-                python3 -m pip install -r requirements.txt --user
-            fi
+                    if [ -f requirements.txt ]; then
+                        echo "Installing additional dependencies from requirements.txt..."
+                        python3 -m pip install -r requirements.txt --user
+                    fi
 
-            echo "Running tests..."
-            # Run pytest, but don't fail pipeline if no tests are found
-            pytest || echo "No tests ran."
-        '''
-    }
-}
-
+                    echo "Running tests..."
+                    pytest || echo "No tests ran."
+                '''
+            }
+        }
 
         stage('SonarQube Analysis') {
             steps {
@@ -49,11 +48,11 @@ pipeline {
         }
 
         stage('Quality Gate') {
-    timeout(time: 10, unit: 'MINUTES') { // increase to 10 minutes
-        waitForQualityGate abortPipeline: true
-    }
-}
-
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
     }
 
