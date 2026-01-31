@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Set SonarScanner path installed on Jenkins node
         SONAR_SCANNER_HOME = '/opt/sonar-scanner-5.0.1.3006-linux'
+        PATH = "${env.HOME}/.local/bin:${env.PATH}" // Ensure pip --user binaries are on PATH
     }
 
     stages {
@@ -16,20 +16,18 @@ pipeline {
         stage('Build & Test') {
             steps {
                 sh '''
-                    echo "Updating PATH for user-installed pip packages..."
-                    export PATH=$HOME/.local/bin:$PATH
+                    echo "Installing Python dependencies if needed..."
+                    # Install pip and pytest if missing
+                    python3 -m pip install --upgrade pip --user
+                    python3 -m pip install pytest --user
 
-                    # Only install requirements if file exists
+                    # Install requirements if requirements.txt exists
                     if [ -f requirements.txt ]; then
-                        echo "Installing Python dependencies from requirements.txt..."
-                        python3 -m pip install --upgrade pip --user
+                        echo "Installing additional dependencies from requirements.txt..."
                         python3 -m pip install -r requirements.txt --user
-                    else
-                        echo "No requirements.txt found, skipping dependency installation."
                     fi
 
                     echo "Running tests..."
-                    # Run pytest, fail pipeline if tests fail
                     pytest || exit 1
                 '''
             }
