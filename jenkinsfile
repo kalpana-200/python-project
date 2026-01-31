@@ -11,11 +11,10 @@ pipeline {
         stage('Build & Test') {
             steps {
                 sh '''
-                    echo "Setting up Python environment..."
-                    python3 -m venv venv
-                    source venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    echo "Installing Python dependencies..."
+                    python3 -m pip install --upgrade pip --user
+                    python3 -m pip install -r requirements.txt --user
+
                     echo "Running tests..."
                     pytest  # fail pipeline if tests fail
                 '''
@@ -27,7 +26,7 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         echo "Running SonarQube analysis..."
-                        # Use system-installed sonar-scanner
+                        # Using system-installed sonar-scanner
                         /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
                           -Dsonar.projectKey=python-project \
                           -Dsonar.sources=. \
